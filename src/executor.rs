@@ -4,13 +4,15 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::PyResult;
 use revm::inspectors::TracerEip3155;
 use revm::precompile::Log;
+// use revm::primitives::{SpecId, TransactTo};
 use revm::primitives::TransactTo;
-use revm::primitives::{ExecutionResult, ShanghaiSpec};
+// use revm::primitives::{ExecutionResult, ShanghaiSpec};
+use revm::primitives::ExecutionResult;
 use revm::{
     inspector_handle_register, Context, ContextWithHandlerCfg, Evm, EvmContext, FrameOrResult,
     FrameResult,
 };
-use revm_interpreter::primitives::HandlerCfg;
+use revm_interpreter::primitives::{HandlerCfg, SHANGHAI};
 use revm_interpreter::{gas, CallInputs, CreateInputs, SuccessOrHalt};
 
 use crate::database::DB;
@@ -66,10 +68,12 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
             let tx = &evm.context.evm.env.tx;
             PyRuntimeError::new_err(format!(
                 "Initial gas spend is {} but gas limit is {}. Error: {:?}",
-                gas::validate_initial_tx_gas::<ShanghaiSpec>(
-                    &tx.data,
+                gas::validate_initial_tx_gas(
+                    SHANGHAI,
+                    &tx.data.as_ref(),
                     tx.transact_to.is_create(),
-                    &tx.access_list
+                    &tx.access_list,
+                    &tx.eof_initcodes
                 ),
                 tx.gas_limit,
                 e
@@ -101,7 +105,7 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
         TransactTo::Call(_) => exec
             .call(ctx, call_inputs(&ctx, gas_limit, is_static))
             .map_err(pyerr)?,
-        TransactTo::Create(_) => exec
+        TransactTo::Create => exec
             .create(
                 ctx,
                 CreateInputs::new_boxed(&ctx.evm.env.tx, gas_limit).unwrap(),
@@ -111,7 +115,7 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
 
     // Starts the main running loop.
     let mut result = match first_frame_or_result {
-        FrameOrResult::Frame(first_frame) => evm.start_the_loop(first_frame).map_err(pyerr)?,
+        FrameOrResult::Frame(first_frame) => evm.run_the_loop(first_frame).map_err(pyerr)?,
         FrameOrResult::Result(result) => result,
     };
 

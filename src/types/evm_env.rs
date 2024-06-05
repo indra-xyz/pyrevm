@@ -3,7 +3,8 @@ use std::default::Default;
 use pyo3::types::PyTuple;
 use pyo3::{pyclass, pymethods, types::PyBytes, PyObject, PyResult, Python};
 use revm::primitives::{
-    Address, BlobExcessGasAndPrice, BlockEnv as RevmBlockEnv, CfgEnv as RevmCfgEnv, CreateScheme,
+    Address, BlobExcessGasAndPrice, BlockEnv as RevmBlockEnv, CfgEnv as RevmCfgEnv,
+    // CreateScheme,
     Env as RevmEnv, TransactTo, TxEnv as RevmTxEnv, B256, U256,
 };
 
@@ -73,7 +74,7 @@ impl TxEnv {
         data: Option<Vec<u8>>,
         chain_id: Option<u64>,
         nonce: Option<u64>,
-        salt: Option<U256>,
+        // salt: Option<U256>,
         access_list: Option<Vec<&PyTuple /*str, list[int]*/>>,
         blob_hashes: Option<Vec<&PyBytes>>,
         max_fee_per_blob_gas: Option<U256>,
@@ -85,9 +86,7 @@ impl TxEnv {
             gas_priority_fee: gas_priority_fee.map(Into::into),
             transact_to: match to {
                 Some(inner) => TransactTo::call(addr(inner)?),
-                None => salt
-                    .map(TransactTo::create2)
-                    .unwrap_or_else(TransactTo::create),
+                None => TransactTo::create(),
             },
             value: value.unwrap_or_default(),
             data: data.unwrap_or_default().into(),
@@ -109,6 +108,8 @@ impl TxEnv {
                 .map(|b| from_pybytes(b))
                 .collect::<PyResult<Vec<B256>>>()?,
             max_fee_per_blob_gas,
+            eof_initcodes: Default::default(),
+            eof_initcodes_hashed: Default::default(),
         }))
     }
 
@@ -136,7 +137,7 @@ impl TxEnv {
     fn to(&self) -> Option<String> {
         match &self.0.transact_to {
             TransactTo::Call(address) => Some(format!("{:?}", address)),
-            TransactTo::Create(_) => None,
+            TransactTo::Create => None,
         }
     }
 
@@ -162,9 +163,9 @@ impl TxEnv {
 
     #[getter]
     fn salt(&self) -> Option<U256> {
-        if let TransactTo::Create(CreateScheme::Create2 { salt }) = self.0.transact_to {
-            return Some(salt);
-        }
+        // if let TransactTo::Create{salt: CreateScheme::Create2 {salt}} = self.0.transact_to {
+        //         return Some(salt);
+        // }
         None
     }
 

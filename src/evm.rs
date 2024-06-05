@@ -8,8 +8,9 @@ use pyo3::{pyclass, pymethods, PyObject, PyResult, Python};
 use revm::precompile::{Address, Bytes};
 use revm::primitives::ExecutionResult::Success;
 use revm::primitives::{
-    BlockEnv as RevmBlockEnv, CreateScheme, Env as RevmEnv, ExecutionResult as RevmExecutionResult,
+    BlockEnv as RevmBlockEnv, Env as RevmEnv, ExecutionResult as RevmExecutionResult,
     HandlerCfg, Output, SpecId, TransactTo, TxEnv as RevmTxEnv,
+    // CreateScheme
 };
 use revm::{primitives::U256, Evm, EvmContext, JournalCheckpoint as RevmCheckpoint};
 use tracing::trace;
@@ -121,7 +122,7 @@ impl EVM {
         if code.is_empty() {
             return Ok(None);
         }
-        Ok(Some(PyBytes::new(py, code.bytecode.as_ref()).into()))
+        Ok(Some(PyBytes::new(py, code.bytecode().as_ref()).into()))
     }
 
     /// Get storage value of address at index.
@@ -206,7 +207,7 @@ impl EVM {
     ) -> PyResult<String> {
         let env = self.build_test_env(
             addr(deployer)?,
-            TransactTo::Create(CreateScheme::Create),
+            TransactTo::Create,
             code.into(),
             value.unwrap_or_default(),
             gas,
@@ -327,7 +328,7 @@ impl EVM {
     /// database
     fn deploy_with_env(&mut self, env: RevmEnv, is_static: bool) -> PyResult<(Bytes, Address)> {
         debug_assert!(
-            matches!(env.tx.transact_to, TransactTo::Create(_)),
+            matches!(env.tx.transact_to, TransactTo::Create),
             "Expect create transaction"
         );
         trace!(sender=?env.tx.caller, "deploying contract");
