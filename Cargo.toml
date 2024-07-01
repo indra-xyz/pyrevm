@@ -1,14 +1,14 @@
 [package]
 name = "pyrevm"
-version = "0.3.4"
+version = "0.3.5"
 edition = "2021"
 
 [lib]
 crate-type = ["cdylib"]
 
 [dependencies]
-revm = { "version"="9.0.0", features=["ethersdb", "serde", "serde-json", "std"] }
-revm-interpreter = "5.0.0"
+revm = { "version"= "10.0.0", features=["ethersdb", "serde", "serde-json", "std"] }
+revm-interpreter = "6.0.0"
 tracing = "0.1.40"
 pyo3 = { version = "0.19", features = ["extension-module"] }
 ruint = { version = "1.12.1", features = ["pyo3"] }

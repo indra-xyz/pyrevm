@@ -122,7 +122,7 @@ impl EVM {
         if code.is_empty() {
             return Ok(None);
         }
-        Ok(Some(PyBytes::new(py, code.bytecode().as_ref()).into()))
+        Ok(Some(PyBytes::new(py, code.as_ref()).into()))
     }
 
     /// Get storage value of address at index.

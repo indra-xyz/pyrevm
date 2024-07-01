@@ -85,8 +85,8 @@ impl TxEnv {
             gas_price: gas_price.unwrap_or_default(),
             gas_priority_fee: gas_priority_fee.map(Into::into),
             transact_to: match to {
-                Some(inner) => TransactTo::call(addr(inner)?),
-                None => TransactTo::create(),
+                Some(inner) => TransactTo::Call(addr(inner)?),
+                None => TransactTo::Create,
             },
             value: value.unwrap_or_default(),
             data: data.unwrap_or_default().into(),
@@ -107,9 +107,7 @@ impl TxEnv {
                 .iter()
                 .map(|b| from_pybytes(b))
                 .collect::<PyResult<Vec<B256>>>()?,
-            max_fee_per_blob_gas,
-            eof_initcodes: Default::default(),
-            eof_initcodes_hashed: Default::default(),
+            max_fee_per_blob_gas
         }))
     }
 

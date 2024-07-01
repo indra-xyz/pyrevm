@@ -5,7 +5,7 @@ use ethers_providers::{Http, Provider};
 use pyo3::{PyErr, PyResult};
 use revm::db::{CacheDB, DbAccount, EthersDB};
 use revm::precompile::{Address, B256};
-use revm::primitives::{AccountInfo, Bytecode, HashMap, State};
+use revm::primitives::{AccountInfo, Bytecode, HashMap, EvmState};
 use revm::Database;
 use revm_interpreter::primitives::db::{DatabaseCommit, DatabaseRef};
 use ruint::aliases::U256;
@@ -88,7 +88,7 @@ impl Database for DB {
 }
 
 impl DatabaseCommit for DB {
-    fn commit(&mut self, changes: State) {
+    fn commit(&mut self, changes: EvmState) {
         match self {
             DB::Memory(ref mut db) => db.commit(changes),
             DB::Fork(ref mut db) => db.commit(changes),

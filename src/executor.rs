@@ -73,7 +73,6 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
                     &tx.data.as_ref(),
                     tx.transact_to.is_create(),
                     &tx.access_list,
-                    &tx.eof_initcodes
                 ),
                 tx.gas_limit,
                 e
@@ -187,8 +186,7 @@ fn output<EXT>(
         },
         // Only two internal return flags.
         SuccessOrHalt::FatalExternalError
-        | SuccessOrHalt::InternalContinue
-        | SuccessOrHalt::InternalCallOrCreate => {
+        | SuccessOrHalt::Internal(_) => {
             panic!("Internal return flags should remain internal {instruction_result:?}")
         }
     };
