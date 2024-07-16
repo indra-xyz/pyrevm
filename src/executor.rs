@@ -12,7 +12,7 @@ use revm::{
     inspector_handle_register, Context, ContextWithHandlerCfg, Evm, EvmContext, FrameOrResult,
     FrameResult,
 };
-use revm_interpreter::primitives::{HandlerCfg, SHANGHAI};
+use revm_interpreter::primitives::{HandlerCfg, CANCUN};
 use revm_interpreter::{gas, CallInputs, CreateInputs, SuccessOrHalt};
 
 use crate::database::DB;
@@ -70,7 +70,7 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
             PyRuntimeError::new_err(format!(
                 "Initial gas spend is {} but gas limit is {}. Error: {:?}",
                 gas::validate_initial_tx_gas(
-                    SHANGHAI,
+                    CANCUN,
                     &tx.data.as_ref(),
                     tx.transact_to.is_create(),
                     &tx.access_list,
