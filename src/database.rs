@@ -36,9 +36,13 @@ impl DB {
             .map(BlockId::from_str)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(pyerr)?;
+        println!("url = {}, block = {:?}", fork_url, block);
         let rt = runtime::Builder::new_current_thread().enable_all().build()?;
-        let db = EthersDB::with_runtime(Arc::new(provider), block, rt)
+        let mut db = EthersDB::with_runtime(Arc::new(provider), None, rt)
             .unwrap_or_else(|| panic!("Could not create EthersDB"));
+        if let Some(block_num) = block {
+            db.set_block_number(block_num);
+        }
         Ok(DB::Fork(CacheDB::new(db)))
     }
 
