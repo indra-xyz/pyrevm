@@ -66,6 +66,7 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
         .initial_tx_gas(&evm.context.evm.env)
         .map_err(|e| {
             let tx = &evm.context.evm.env.tx;
+            let authorization_list_num = tx.authorization_list.as_ref().map(|l| l.len() as u64).unwrap_or_default();
             PyRuntimeError::new_err(format!(
                 "Initial gas spend is {} but gas limit is {}. Error: {:?}",
                 gas::validate_initial_tx_gas(
@@ -73,6 +74,7 @@ fn run_evm<EXT>(evm: &mut Evm<'_, EXT, DB>, is_static: bool) -> PyResult<Executi
                     &tx.data.as_ref(),
                     tx.transact_to.is_create(),
                     &tx.access_list,
+                    authorization_list_num
                 ),
                 tx.gas_limit,
                 e

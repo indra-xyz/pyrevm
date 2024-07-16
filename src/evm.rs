@@ -135,7 +135,7 @@ impl EVM {
     }
 
     /// Get block hash by block number.
-    fn block_hash(&mut self, number: U256, py: Python<'_>) -> PyResult<PyObject> {
+    fn block_hash(&mut self, number: u64, py: Python<'_>) -> PyResult<PyObject> {
         let hash = self.context.block_hash(number).map_err(pyerr)?;
         Ok(PyBytes::new(py, hash.as_ref()).into())
     }

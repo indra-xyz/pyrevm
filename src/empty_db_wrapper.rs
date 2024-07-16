@@ -27,7 +27,7 @@ impl DatabaseRef for EmptyDBWrapper {
         self.0.storage_ref(address, index)
     }
 
-    fn block_hash_ref(&self, number: U256) -> Result<B256, Self::Error> {
+    fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
         self.0.block_hash_ref(number)
     }
 }

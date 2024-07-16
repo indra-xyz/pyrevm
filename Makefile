@@ -1,18 +1,15 @@
-.PHONY: default install build run
+.PHONY: default build run
 
 default: test
 
-install:
-	poetry install
-
 build:
-	poetry run maturin develop
+	maturin develop
 
 build-prod:
-	poetry run maturin develop --release
+	maturin develop --release
 
 test: build
-	poetry run pytest -s tests/*
+	pytest -s tests/*
 
 lint:
 	cargo clippy --workspace --all-targets --all-features

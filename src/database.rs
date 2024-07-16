@@ -11,13 +11,14 @@ use revm_interpreter::primitives::db::{DatabaseCommit, DatabaseRef};
 use ruint::aliases::U256;
 use std::str::FromStr;
 use std::sync::Arc;
+use tokio::runtime;
 
 type MemDB = CacheDB<EmptyDBWrapper>;
 type ForkDB = CacheDB<EthersDB<Provider<Http>>>;
 
 /// A wrapper around the `CacheDB` and `EthersDB` to provide a common interface
 /// without needing dynamic lifetime and generic parameters (unsupported in PyO3)
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub(crate) enum DB {
     Memory(MemDB),
     Fork(ForkDB),
@@ -28,13 +29,15 @@ impl DB {
         DB::Memory(MemDB::new(EmptyDBWrapper::default()))
     }
 
+
     pub(crate) fn new_fork(fork_url: &str, fork_block: Option<&str>) -> PyResult<Self> {
         let provider = Provider::<Http>::try_from(fork_url).map_err(pyerr)?;
         let block = fork_block
             .map(BlockId::from_str)
             .map_or(Ok(None), |v| v.map(Some))
             .map_err(pyerr)?;
-        let db = EthersDB::new(Arc::new(provider), block)
+        let rt = runtime::Builder::new_current_thread().enable_all().build()?;
+        let db = EthersDB::with_runtime(Arc::new(provider), block, rt)
             .unwrap_or_else(|| panic!("Could not create EthersDB"));
         Ok(DB::Fork(CacheDB::new(db)))
     }
@@ -79,7 +82,7 @@ impl Database for DB {
         })
     }
 
-    fn block_hash(&mut self, number: U256) -> Result<B256, Self::Error> {
+    fn block_hash(&mut self, number: u64) -> Result<B256, Self::Error> {
         Ok(match self {
             DB::Memory(db) => db.block_hash(number).map_err(pyerr)?,
             DB::Fork(db) => db.block_hash(number).map_err(pyerr)?,
@@ -120,7 +123,7 @@ impl DatabaseRef for DB {
         })
     }
 
-    fn block_hash_ref(&self, number: U256) -> Result<B256, Self::Error> {
+    fn block_hash_ref(&self, number: u64) -> Result<B256, Self::Error> {
         Ok(match self {
             DB::Memory(db) => db.block_hash_ref(number).map_err(pyerr)?,
             DB::Fork(db) => db.block_hash_ref(number).map_err(pyerr)?,

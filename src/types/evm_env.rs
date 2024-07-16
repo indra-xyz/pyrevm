@@ -1,12 +1,8 @@
 use std::default::Default;
 
+use pyo3::{pyclass, pymethods, PyObject, PyResult, Python, types::PyBytes};
 use pyo3::types::PyTuple;
-use pyo3::{pyclass, pymethods, types::PyBytes, PyObject, PyResult, Python};
-use revm::primitives::{
-    Address, BlobExcessGasAndPrice, BlockEnv as RevmBlockEnv, CfgEnv as RevmCfgEnv,
-    // CreateScheme,
-    Env as RevmEnv, TransactTo, TxEnv as RevmTxEnv, B256, U256,
-};
+use revm::primitives::{AccessListItem, B256, BlobExcessGasAndPrice, BlockEnv as RevmBlockEnv, CfgEnv as RevmCfgEnv, Env as RevmEnv, TransactTo, TxEnv as RevmTxEnv, U256};
 
 use crate::utils::{addr, addr_or_zero, from_pybytes};
 
@@ -79,6 +75,17 @@ impl TxEnv {
         blob_hashes: Option<Vec<&PyBytes>>,
         max_fee_per_blob_gas: Option<U256>,
     ) -> PyResult<Self> {
+        let access_list2 = access_list
+            .unwrap_or_default()
+            .iter()
+            .map(|tuple| {
+                let s_keys = tuple.get_item(1)?.extract::<Vec<U256>>()?;
+                Ok(AccessListItem{
+                    address: addr(tuple.get_item(0)?.extract()?)?,
+                    storage_keys: s_keys.iter().map(|k| B256::from(k.to_be_bytes())).collect(),
+                })
+            })
+            .collect::<PyResult<Vec<AccessListItem>>>()?;
         Ok(TxEnv(RevmTxEnv {
             caller: addr_or_zero(caller)?,
             gas_limit: gas_limit.unwrap_or(u64::MAX),
@@ -92,22 +99,14 @@ impl TxEnv {
             data: data.unwrap_or_default().into(),
             chain_id,
             nonce,
-            access_list: access_list
-                .unwrap_or_default()
-                .iter()
-                .map(|tuple| {
-                    Ok((
-                        addr(tuple.get_item(0)?.extract()?)?,
-                        tuple.get_item(1)?.extract::<Vec<U256>>()?,
-                    ))
-                })
-                .collect::<PyResult<Vec<(Address, Vec<U256>)>>>()?,
+            access_list: access_list2,
             blob_hashes: blob_hashes
                 .unwrap_or_default()
                 .iter()
                 .map(|b| from_pybytes(b))
                 .collect::<PyResult<Vec<B256>>>()?,
-            max_fee_per_blob_gas
+            max_fee_per_blob_gas,
+            authorization_list: None
         }))
     }
 
@@ -169,11 +168,12 @@ impl TxEnv {
 
     #[getter]
     fn access_list(&self) -> Vec<(String, Vec<U256>)> {
-        self.0
-            .access_list
-            .iter()
-            .map(|(a, b)| (a.to_string(), b.clone()))
-            .collect()
+        self.0.access_list.iter().map(|item| {
+            (
+                item.address.to_string(),
+                item.storage_keys.iter().map(|slot| U256::from_be_bytes(slot.0)).collect(),
+            )
+        }).collect()
     }
 
     #[getter]
