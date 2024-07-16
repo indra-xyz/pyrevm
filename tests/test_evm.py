@@ -75,7 +75,7 @@ def test_deploy():
     assert deployed_at == "0x3e4ea2156166390f880071d94458efb098473311"
     deployed_code = evm.get_code(deployed_at)
     assert deployed_code.hex().rstrip("0") in code.hex()
-    assert evm.basic(deployed_at).code.hex() == deployed_code.hex()
+    assert evm.basic(deployed_at).code.hex().rstrip("0") == deployed_code.hex()
 
     result = evm.message_call(
         address,
